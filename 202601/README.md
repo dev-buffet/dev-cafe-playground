@@ -1,4 +1,7 @@
-# 2025 年 1 月月會 - 用 Unraid 輕鬆駕馭 NAS
+# 抽屜裡的舊硬碟復活了！用 Unraid 輕鬆駕馭 NAS
+
+- 分享者：章魚燒
+- [活動連結](https://www.facebook.com/events/1202639738108763)
 
 ## 月會主題
 

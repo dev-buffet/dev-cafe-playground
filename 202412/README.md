@@ -1,5 +1,6 @@
 # 那些年用過的 Git 分支管理策略
 
+- 分享者：Brook
 - [活動連結](https://www.facebook.com/events/7444604432330852/)
 - [投影片](https://hackmd.io/P78xVpNaTxCNaEvUITQ4XQ?view)
 
