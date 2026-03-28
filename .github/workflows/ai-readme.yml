@@ -1,0 +1,59 @@
+name: Auto Generate Event Summary
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '20**/**' # 只在年份開頭的目錄（如 202412/）有變動時觸發
+  workflow_dispatch: # 允許手動觸發
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 允許 push 回 PR branch
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }} # PR 時 checkout head branch，手動觸發時用當前 ref
+          fetch-depth: 0 # 取完整歷史以支援 git diff
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Identify changed directories and generate READMEs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_DESCRIPTION: ${{ github.event.pull_request.body }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # 找出此 PR 相對於 base branch 有變動的檔案
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
+
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "沒有相關的檔案變動。"
+              exit 0
+            fi
+
+            echo "變動的檔案清單："
+            echo "$CHANGED_FILES"
+
+            echo "$CHANGED_FILES" | xargs node scripts/generate_summary.js
+          else
+            echo "手動觸發，掃描所有符合條件的目錄..."
+            node scripts/generate_summary.js
+          fi
+
+      - name: Commit and push generated README
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-generate README summary [skip ci]"
+          branch: ${{ github.head_ref }}
+          file_pattern: '**/README.md'

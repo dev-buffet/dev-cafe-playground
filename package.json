@@ -1,0 +1,23 @@
+{
+  "name": "dev-cafe-playground",
+  "version": "1.0.0",
+  "description": "我們是一群在台灣科技研討會結識的夥伴，自疫情期間，我們所在的城市技術社群與聚會逐漸減少。希望能保持討論和交流的熱度，因此我們決定發起聚會。 在這裏會舉辦各種形式的活動，議題大致上包括但不限於前、後端、UI/UX、ML、軟體開發等，希望大家能在這裡找到並盡情享受自己感興趣的事物，因此取名為`開發者 Buffet`。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dev-buffet/dev-cafe-playground.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dev-buffet/dev-cafe-playground/issues"
+  },
+  "homepage": "https://github.com/dev-buffet/dev-cafe-playground#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
+  }
+}
