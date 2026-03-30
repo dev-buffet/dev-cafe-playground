@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref }} # PR 時 checkout head branch，手動觸發時用當前 ref
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }} # 優先用 PAT（有 write 權限），fallback 到預設 token
           fetch-depth: 0 # 取完整歷史以支援 git diff
 
       - name: Set up Node.js
