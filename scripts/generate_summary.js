@@ -98,7 +98,7 @@ async function generateReadme(directoryPath) {
     - 輸出必須以 \`# 活動名稱\` 開頭。
     - 主題內容段落要有實質說明，不能只列條列式清單，要讓沒有參加活動的人也能看懂。
     - 最後一行加上註記，說明本文由 AI 協助整理，並註明使用的模型名稱（例如：\`本文由 AI + Gemini 2.5 Flash 協助整理\`）。
-    - 請只回傳 Markdown 內容，不要包含任何開頭或結尾的解釋文字。
+    - 請只回傳 Markdown 內容，不要用 \`\`\`markdown 或任何 code fence 包裝，也不要包含任何開頭或結尾的解釋文字。
 
     **待分析內容與檔案列表：**
     ${content}
@@ -107,14 +107,52 @@ async function generateReadme(directoryPath) {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const readmeContent = response.text();
+    // AI 有時會用 ```markdown ... ``` 包住輸出，去除 code fence
+    const readmeContent = response.text()
+      .replace(/^```(?:markdown)?\n/, '')
+      .replace(/\n```\s*$/, '');
 
-    const readmePath = path.join(directoryPath, 'README.md');
     fs.writeFileSync(readmePath, readmeContent, 'utf8');
     console.log(`成功為 ${directoryPath} 產生 README.md`);
+
+    updateActivityList(directoryPath, readmeContent);
   } catch (e) {
     console.error(`為 ${directoryPath} 產生內容失敗: ${e.message}`);
   }
+}
+
+function updateActivityList(directoryPath, readmeContent) {
+  const rootReadmePath = 'README.md';
+  if (!fs.existsSync(rootReadmePath)) return;
+
+  const dirName = path.basename(directoryPath);
+
+  const rootReadme = fs.readFileSync(rootReadmePath, 'utf8');
+
+  // 若已有此目錄的連結，略過
+  if (rootReadme.includes(`(./${dirName}/)`)) {
+    console.log(`活動列表已有 ${dirName} 的項目，略過更新。`);
+    return;
+  }
+
+  // 從生成的 README 第一行取得活動標題（去掉 `# `）
+  const title = readmeContent.split('\n')[0].replace(/^#\s+/, '').trim();
+
+  // 將目錄名轉成日期格式（例如 202603 → 2026-03，202603-topic → 2026-03）
+  const match = dirName.match(/^(\d{4})(\d{2})/);
+  const dateStr = match ? `${match[1]}-${match[2]}` : dirName;
+
+  const newEntry = `- [${dateStr} ${title}](./${dirName}/)`;
+
+  // 插入到 `## 活動列表` 區塊的最後一筆項目之後（下一個 `##` 之前）
+  const updated = rootReadme.replace(
+    /(## 活動列表[\s\S]*?)(^## )/m,
+    (_, listSection, nextSection) =>
+      listSection.trimEnd() + '\n' + newEntry + '\n\n' + nextSection
+  );
+
+  fs.writeFileSync(rootReadmePath, updated, 'utf8');
+  console.log(`已將 ${dirName} 加入活動列表。`);
 }
 
 async function main() {

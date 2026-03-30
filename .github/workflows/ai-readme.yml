@@ -56,4 +56,4 @@ jobs:
         with:
           commit_message: "docs: auto-generate README summary [skip ci]"
           branch: ${{ github.head_ref }}
-          file_pattern: '**/README.md'
+          file_pattern: 'README.md **/README.md'
