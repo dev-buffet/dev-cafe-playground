@@ -19,16 +19,20 @@ description: 上傳開發者 Café 活動紀錄與簡報 (Upload Event Record)
    - 將主要講義檔案重新命名為 `Slides.md`（若是 PDF 格式，則重新命名為 `Slides.pdf`）。
 
 // turbo
-4. **準備 Git 分支**：
-   - 建立並切換至新的 Git 分支（例如 `add-record-[YYYYMM]`）。
-   - 將新增的資料夾與素材加入 Git 追蹤並完成 Commit。
+4. **更新首頁活動列表**：
+   - 將本次活動的連結以 Markdown 語法清單的形式加入根目錄 `README.md` 的「## 活動列表」中。格式如：`- [YYYY-MM 主題名稱](./YYYYMM-主題名稱/)`。
 
 // turbo
-5. **開啟 Pull Request (PR)**：
+5. **準備 Git 分支**：
+   - 建立並切換至新的 Git 分支（例如 `add-record-[YYYYMM]`）。
+   - 將新增的資料夾、素材與修改後的 `README.md` 一併加入 Git 追蹤並完成 Commit。
+
+// turbo
+6. **開啟 Pull Request (PR)**：
    - 將分支 Push 到遠端。
    - 使用 `gh pr create` 建立 PR，並將目標設為 `main` 分支。
    - **重要**：在 PR 內容中，必須照範本填寫剛收集到的資訊（包含：分享者、活動連結、簡介）。*若講義為 PDF 或其他非 Markdown 格式，請務必在 PR 描述中特別標註說明（例如：「投影片為 PDF 格式」），讓自動化腳本能順利處理。*
 
-6. **完成與總結**：
+7. **完成與總結**：
    - 提供 PR 網址給使用者。
    - 提醒使用者等待 GitHub Actions 執行完畢（該 Action 會自動生成 `README.md`），隨後使用者即可自行將 PR 合併。
