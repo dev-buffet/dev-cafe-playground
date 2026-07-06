@@ -29,14 +29,126 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Detect changed files and asset types
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git -c core.quotepath=false diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
+          else
+            # 手動觸發時沒有 diff 基準：只納入「尚無 README.md」的活動目錄
+            #（與 generate_summary.js 的跳過邏輯對齊，避免歷史目錄的素材每次都白白轉檔）
+            CHANGED_FILES=$(
+              for d in 20*/; do
+                d="${d%/}"
+                [ -d "$d" ] || continue
+                [ -f "$d/README.md" ] && continue
+                find "$d" -type f
+              done || true
+            )
+          fi
+
+          echo "偵測到的檔案清單："
+          echo "$CHANGED_FILES"
+
+          {
+            echo "changed_files<<GHA_EOF"
+            echo "$CHANGED_FILES"
+            echo "GHA_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          if echo "$CHANGED_FILES" | grep -qi '\.pptx$'; then
+            echo "has_pptx=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pptx=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -qiE '\.(jpe?g|png|webp|heic)$'; then
+            echo "has_image=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_image=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 轉換 PPTX 投影片為 PDF
+        if: steps.detect.outputs.has_pptx == 'true'
+        continue-on-error: true
+        run: |
+          set +e
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libreoffice-impress
+          mkdir -p "$RUNNER_TEMP/pptx-pdf"
+
+          echo "${{ steps.detect.outputs.changed_files }}" | grep -i '\.pptx$' | while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            if [ ! -f "$f" ]; then
+              echo "找不到檔案，略過: $f"
+              continue
+            fi
+            outdir="$RUNNER_TEMP/pptx-pdf/$(dirname "$f")"
+            mkdir -p "$outdir"
+            if soffice --headless --convert-to pdf --outdir "$outdir" "$f"; then
+              echo "已轉檔: $f"
+            else
+              echo "PPTX 轉檔失敗，略過: $f（請將重點寫入 PR 描述）"
+            fi
+          done
+
+      - name: 縮圖活動照片
+        if: steps.detect.outputs.has_image == 'true'
+        continue-on-error: true
+        run: |
+          set +e
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y imagemagick
+
+          # 鎖定 ImageMagick policy：縮圖只需要 JPEG/PNG/WEBP/HEIC/GIF 等點陣格式，
+          # 停用高風險 coder/delegate（URL 取用、ghostscript 相關、MSL/MVG script）。
+          # Ubuntu 24.04 apt 裝的是 ImageMagick 6，直接覆寫系統 policy（/etc/ImageMagick-6/policy.xml）確保生效。
+          sudo tee /etc/ImageMagick-6/policy.xml > /dev/null <<'POLICY_EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <policymap>
+            <policy domain="coder" rights="none" pattern="EPHEMERAL" />
+            <policy domain="coder" rights="none" pattern="URL" />
+            <policy domain="coder" rights="none" pattern="HTTPS" />
+            <policy domain="coder" rights="none" pattern="HTTP" />
+            <policy domain="coder" rights="none" pattern="FTP" />
+            <policy domain="coder" rights="none" pattern="MVG" />
+            <policy domain="coder" rights="none" pattern="MSL" />
+            <policy domain="coder" rights="none" pattern="PS" />
+            <policy domain="coder" rights="none" pattern="PS2" />
+            <policy domain="coder" rights="none" pattern="PS3" />
+            <policy domain="coder" rights="none" pattern="EPS" />
+            <policy domain="coder" rights="none" pattern="PDF" />
+            <policy domain="coder" rights="none" pattern="XPS" />
+          </policymap>
+          POLICY_EOF
+          echo "ImageMagick policy 生效確認："
+          identify -list policy | head -60
+
+          mkdir -p "$RUNNER_TEMP/image-thumb"
+
+          echo "${{ steps.detect.outputs.changed_files }}" | grep -iE '\.(jpe?g|png|webp|heic)$' | while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            if [ ! -f "$f" ]; then
+              echo "找不到檔案，略過: $f"
+              continue
+            fi
+            outfile="$RUNNER_TEMP/image-thumb/$f"
+            mkdir -p "$(dirname "$outfile")"
+            if convert "$f" -resize '768x768>' "$outfile"; then
+              echo "已縮圖: $f"
+            else
+              echo "縮圖失敗，略過: $f（generate_summary.js 將跳過此圖片）"
+            fi
+          done
+
       - name: Identify changed directories and generate READMEs
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PR_DESCRIPTION: ${{ github.event.pull_request.body }}
+          PPTX_PDF_DIR: ${{ runner.temp }}/pptx-pdf
+          IMAGE_THUMB_DIR: ${{ runner.temp }}/image-thumb
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # 找出此 PR 相對於 base branch 有變動的檔案
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
+            CHANGED_FILES=$(git -c core.quotepath=false diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
 
             if [ -z "$CHANGED_FILES" ]; then
               echo "沒有相關的檔案變動。"
@@ -46,7 +158,8 @@ jobs:
             echo "變動的檔案清單："
             echo "$CHANGED_FILES"
 
-            echo "$CHANGED_FILES" | xargs node scripts/generate_summary.js
+            # -d '\n' 以行為單位切割，避免含空格的檔名（如中文投影片檔名）被 xargs 拆碎
+            echo "$CHANGED_FILES" | grep . | xargs -d '\n' node scripts/generate_summary.js
           else
             echo "手動觸發，掃描所有符合條件的目錄..."
             node scripts/generate_summary.js
