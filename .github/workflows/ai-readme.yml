@@ -33,7 +33,7 @@ jobs:
         id: detect
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
+            CHANGED_FILES=$(git -c core.quotepath=false diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
           else
             # 手動觸發時沒有 diff 基準：只納入「尚無 README.md」的活動目錄
             #（與 generate_summary.js 的跳過邏輯對齊，避免歷史目錄的素材每次都白白轉檔）
@@ -148,7 +148,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # 找出此 PR 相對於 base branch 有變動的檔案
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
+            CHANGED_FILES=$(git -c core.quotepath=false diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^20" || true)
 
             if [ -z "$CHANGED_FILES" ]; then
               echo "沒有相關的檔案變動。"
@@ -158,7 +158,8 @@ jobs:
             echo "變動的檔案清單："
             echo "$CHANGED_FILES"
 
-            echo "$CHANGED_FILES" | xargs node scripts/generate_summary.js
+            # -d '\n' 以行為單位切割，避免含空格的檔名（如中文投影片檔名）被 xargs 拆碎
+            echo "$CHANGED_FILES" | grep . | xargs -d '\n' node scripts/generate_summary.js
           else
             echo "手動觸發，掃描所有符合條件的目錄..."
             node scripts/generate_summary.js
