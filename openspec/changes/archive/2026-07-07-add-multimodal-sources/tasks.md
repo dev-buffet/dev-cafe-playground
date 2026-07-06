@@ -27,7 +27,7 @@
 
 ## 5. CI workflow（ai-readme.yml）
 
-- [ ] 5.1 實測：先跑一次獨立 CI job（或 `workflow_dispatch` 手動觸發），量測 `apt-get install imagemagick libreoffice-impress` 的安裝秒數，並驗證 PPTX→PDF headless 轉檔可行性；依結果決定是否需要快取（如 `actions/cache`）或改變安裝方案，再定案下列步驟的實作細節
+- [x] 5.1 實測：先跑一次獨立 CI job（或 `workflow_dispatch` 手動觸發），量測 `apt-get install imagemagick libreoffice-impress` 的安裝秒數，並驗證 PPTX→PDF headless 轉檔可行性；依結果決定是否需要快取（如 `actions/cache`）或改變安裝方案，再定案下列步驟的實作細節（2026-07-06 於 PR #5 以 workflow_dispatch run 28766133777 實測：LibreOffice 安裝＋轉檔 29s、ImageMagick 安裝＋縮圖 7s、全 job 52s，判定無需快取；數據記錄於 PR #5 描述）
 - [x] 5.2 新增條件式 PPTX 轉檔步驟：偵測變動目錄含 `.pptx` 才執行 `apt-get install libreoffice-impress` 並轉檔至 `$RUNNER_TEMP`；失敗時 log 提示、不 fail CI
 - [x] 5.3 新增圖片縮圖步驟：偵測到圖片檔時執行 `apt-get install imagemagick`（Ubuntu 24.04 未預裝，不可假設已存在），縮圖長邊 768px 輸出至 `$RUNNER_TEMP`，並把暫存目錄路徑以環境變數傳給 script
 - [x] 5.4 確認 auto-commit 的 `file_pattern` 不會撈進任何暫存產物
@@ -51,5 +51,5 @@
 
 ## 8. 端到端驗證
 
-- [ ] 8.1 開測試 PR（含 PPTX＋照片的測試活動目錄）走完整 CI 流程，確認生成 README 符合兩份 spec 的 scenarios、無暫存檔被 commit
-- [ ] 8.2 驗證通過後移除測試目錄或轉為正式活動紀錄，並向維護者確認是否刪除 `202602/README.md` 觸發真實案例重生成
+- [x] 8.1 開測試 PR（含 PPTX＋照片的測試活動目錄）走完整 CI 流程，確認生成 README 符合兩份 spec 的 scenarios、無暫存檔被 commit（2026-07-06 驗證：測試 PR #5 的 dispatch run 以 PPTX＋照片成功生成符合 spec 的 README（commit b3bf1a9：講者列名、投影片連結指向原始 .pptx、無虛構檔名），auto-commit 僅含 README、無暫存檔；PR 路徑生成在測試目錄上兩次遇 Gemini 503 未成功（過程中發現並修正中文檔名偵測 bug 27d9f15），改由真實 PR #3（202603，PDF 投影片）於 PR 路徑端到端驗證通過：run 28784747454 生成並 auto-commit 057ade7，僅含 README）
+- [x] 8.2 驗證通過後移除測試目錄或轉為正式活動紀錄，並向維護者確認是否刪除 `202602/README.md` 觸發真實案例重生成（測試目錄 `202607-multimodal-test/` 已於 PR #5 merge 前移除，origin/main 無殘留；2026-07-07 維護者決定保留現有 `202602/README.md`，不觸發重生成）
