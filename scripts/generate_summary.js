@@ -330,7 +330,7 @@ async function generateReadme(directoryPath) {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-2.5-flash',
       contents,
     });
     // AI 有時會用 ```markdown ... ``` 包住輸出，去除 code fence
@@ -343,7 +343,8 @@ async function generateReadme(directoryPath) {
 
     updateActivityList(directoryPath, readmeContent);
   } catch (e) {
-    console.error(`為 ${directoryPath} 產生內容失敗: ${e.message}`);
+    // 拋出錯誤讓呼叫端記錄失敗，最終以非零 exit code 結束，避免 CI 誤判成功
+    throw new Error(`為 ${directoryPath} 產生內容失敗: ${e.message}`);
   }
 }
 
@@ -412,8 +413,19 @@ async function main() {
     return;
   }
 
+  const failedDirs = [];
   for (const dir of uniqueDirs) {
-    await generateReadme(dir);
+    try {
+      await generateReadme(dir);
+    } catch (e) {
+      console.error(e.message);
+      failedDirs.push(dir);
+    }
+  }
+
+  if (failedDirs.length > 0) {
+    console.error(`以下目錄的 README 生成失敗: ${failedDirs.join(', ')}`);
+    process.exit(1);
   }
 }
 
