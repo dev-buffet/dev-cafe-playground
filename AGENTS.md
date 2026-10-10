@@ -17,8 +17,8 @@
 
 PR 觸及 `20**` 開頭路徑時，[.github/workflows/ai-readme.yml](.github/workflows/ai-readme.yml) 會執行 [scripts/generate_summary.js](scripts/generate_summary.js)：
 
-1. 讀取變動目錄內的檔案（含一層子目錄）＋ PR 描述：文字檔沿用截斷邏輯（單檔 5000 字、總量上限 30000 字），PDF／PPTX／圖片改計入另一套請求體積預算，超出預算時依優先序捨棄並 log。
-2. 用 Gemini（`gemini-2.5-flash-lite`，需 repo secret `GEMINI_API_KEY`）生成該目錄的 `README.md`。
+1. 讀取變動目錄內的檔案（含一層子目錄）＋ PR 描述：文字檔沿用截斷邏輯（單檔 20000 字、總量硬上限 100000 字，剩餘額度不足時截斷而非整份跳過），PDF／PPTX／圖片改計入另一套請求體積預算，超出預算時依優先序捨棄並 log。
+2. 用 Gemini（`gemini-2.5-flash`，需 repo secret `GEMINI_API_KEY`）生成該目錄的 `README.md`。
 3. 把新活動插入根 `README.md` 的「## 活動列表」區塊。
 4. auto-commit 回 PR branch（commit message 帶 `[skip ci]`）。
 

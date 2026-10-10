@@ -20,6 +20,10 @@ const IGNORE_NAMES = ['README.md', '.DS_Store', 'node_modules', 'package.json', 
 const INLINE_BUDGET_BYTES = 14 * 1024 * 1024; // 14MB
 const SINGLE_PDF_LIMIT_BYTES = 9 * 1024 * 1024; // 9MB
 
+// 文字素材字數上限（design D2）：單檔上限與所有文字檔的總量硬上限。
+const TEXT_FILE_CHAR_LIMIT = 20000;
+const TEXT_TOTAL_CHAR_LIMIT = 100000;
+
 // CI workflow（.github/workflows/ai-readme.yml）在偵測到 .pptx / 圖片時，
 // 分別以 LibreOffice / ImageMagick 轉檔・縮圖到 repo 外的暫存目錄，並透過下列
 // 環境變數把「鏡射活動目錄結構」的暫存目錄路徑傳給本 script：
@@ -158,16 +162,22 @@ function buildRequestParts(directoryPath) {
     }
 
     if (classification.type === 'text') {
-      if (textTotalChars >= 30000) {
-        console.log(`略過檔案 ${file.relPath}：文字總量已達上限（30000 字）`);
+      const remainingChars = TEXT_TOTAL_CHAR_LIMIT - textTotalChars;
+      if (remainingChars <= 0) {
+        console.log(`略過檔案 ${file.relPath}：文字總量已達上限（${TEXT_TOTAL_CHAR_LIMIT} 字）`);
         continue;
       }
       try {
         let text = fs.readFileSync(file.absPath, 'utf8');
-        if (text.length > 5000) {
-          text = text.substring(0, 5000) + '\n...[內容過長已截斷]...';
+        // 可讀長度取單檔上限與剩餘額度的較小者（design D3）；截斷標記不計入字數。
+        const allowedChars = Math.min(TEXT_FILE_CHAR_LIMIT, remainingChars);
+        const truncated = text.length > allowedChars;
+        if (truncated) {
+          console.log(`截斷檔案 ${file.relPath}：${text.length} 字 → ${allowedChars} 字（單檔上限 ${TEXT_FILE_CHAR_LIMIT}、總量剩餘 ${remainingChars}）`);
+          text = text.substring(0, allowedChars);
         }
         textTotalChars += text.length;
+        if (truncated) text += '\n...[內容過長已截斷]...';
         const label = `--- 檔案名稱: ${file.relPath} ---\n${text}\n`;
         textItems.push({ relPath: file.relPath, size: Buffer.byteLength(label, 'utf8'), text: label });
       } catch (e) {
