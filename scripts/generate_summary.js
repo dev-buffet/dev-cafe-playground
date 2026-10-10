@@ -381,12 +381,17 @@ function updateActivityList(directoryPath, readmeContent) {
 
   const newEntry = `- [${dateStr} ${title}](./${dirName}/)`;
 
-  // 插入到 `## 活動列表` 區塊的最後一筆項目之後（下一個 `##` 之前）
+  // 插入到 `## 活動列表` 區塊的最後一筆項目之後（下一個 `##` 之前；若為最後一段則到檔案結尾）
   const updated = rootReadme.replace(
-    /(## 活動列表[\s\S]*?)(^## )/m,
+    /(## 活動列表[\s\S]*?)(^## |(?![\s\S]))/m,
     (_, listSection, nextSection) =>
-      listSection.trimEnd() + '\n' + newEntry + '\n\n' + nextSection
+      listSection.trimEnd() + '\n' + newEntry + '\n' + (nextSection ? '\n' + nextSection : '')
   );
+
+  if (updated === rootReadme) {
+    console.log(`根 README 找不到「## 活動列表」區塊，未加入 ${dirName}。`);
+    return;
+  }
 
   fs.writeFileSync(rootReadmePath, updated, 'utf8');
   console.log(`已將 ${dirName} 加入活動列表。`);
