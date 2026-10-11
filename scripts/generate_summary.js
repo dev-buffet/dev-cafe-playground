@@ -43,6 +43,33 @@ function classifyFile(relPath) {
   return { type: 'skip', reason: '不支援的格式' };
 }
 
+/**
+ * 從 HTML 抽取可讀文字（design D2）：HTML 投影片的字數多半花在標籤與 script 上，
+ * 先抽出文字再計算字數上限。只給 LLM 閱讀，用 regex 即可，不引入 HTML parser。
+ */
+function extractHtmlText(html) {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(head|script|style|noscript|svg|template)\b[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<a\b[^>]*?\bhref\s*=\s*["']([^"']*)["'][^>]*>([\s\S]*?)<\/a\s*>/gi, (_, href, text) => `${text} (${href})`)
+    .replace(/<img\b[^>]*?\balt\s*=\s*["']([^"']*)["'][^>]*>/gi, (_, alt) => (alt.trim() ? `[圖：${alt.trim()}]` : ''))
+    .replace(/<section\b[^>]*>/gi, '\n\n---\n\n')
+    .replace(/<\/?(p|div|br|li|h[1-6]|tr|pre|blockquote|ul|ol|table)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&amp;/g, '&') // 最後解碼，避免 `&amp;lt;` 被二次解碼
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function getImageMimeType(ext) {
   switch (ext) {
     case '.jpg':
@@ -169,6 +196,17 @@ function buildRequestParts(directoryPath) {
       }
       try {
         let text = fs.readFileSync(file.absPath, 'utf8');
+        const isHtml = path.extname(file.relPath).toLowerCase() === '.html';
+        if (isHtml) {
+          // HTML 先抽取可讀文字，字數上限以抽取後的文字計算（design D3、D4）
+          const rawLength = text.length;
+          text = extractHtmlText(text);
+          console.log(`HTML 抽取 ${file.relPath}：原始 ${rawLength} 字 → ${text.length} 字`);
+          if (!text) {
+            console.log(`略過檔案 ${file.relPath}：HTML 抽取後無內容（可能由 JavaScript 動態產生），請改附 PDF 或 Slides.md`);
+            continue;
+          }
+        }
         // 可讀長度取單檔上限與剩餘額度的較小者（design D3）；截斷標記不計入字數。
         const allowedChars = Math.min(TEXT_FILE_CHAR_LIMIT, remainingChars);
         const truncated = text.length > allowedChars;
@@ -178,7 +216,8 @@ function buildRequestParts(directoryPath) {
         }
         textTotalChars += text.length;
         if (truncated) text += '\n...[內容過長已截斷]...';
-        const label = `--- 檔案名稱: ${file.relPath} ---\n${text}\n`;
+        const kind = isHtml ? '（HTML 投影片，已去除標籤）' : '';
+        const label = `--- 檔案名稱: ${file.relPath}${kind} ---\n${text}\n`;
         textItems.push({ relPath: file.relPath, size: Buffer.byteLength(label, 'utf8'), text: label });
       } catch (e) {
         console.error(`讀取檔案 ${file.relPath} 失敗: ${e.message}`);
@@ -312,7 +351,7 @@ async function generateReadme(directoryPath) {
     2. **基本資訊清單**（緊接在標題後）：
         - \`- 分享者：[名稱]\`（若有多位講者，每位皆須列出，不可只保留其中一位）
         - \`- [活動連結](URL)\`（如果資料中沒提到則「整行略過」）
-        - \`- [投影片](URL)\`：每份投影片各自成行。若同一場活動有多份投影片，每條連結請標註對應的講者或主題（例如 \`- [投影片：OpenCore 入門（Brook）](slides-a.pdf)\`）。投影片素材若為 PPTX（可能以已轉檔的 PDF 內容呈現給你），連結請指向原始的 \`.pptx\` 檔案路徑，而非任何暫存 PDF。找不到對應投影片檔案、只有外部連結時則用該外部連結；兩者都沒有才「整行略過」。連結的 URL 只能是上面素材中實際標示的檔案路徑，或 PR 說明中明確提供的網址——嚴禁自行編造任何檔名或網址。
+        - \`- [投影片](URL)\`：每份投影片各自成行。若同一場活動有多份投影片，每條連結請標註對應的講者或主題（例如 \`- [投影片：OpenCore 入門（Brook）](slides-a.pdf)\`）。投影片素材若為 PPTX（可能以已轉檔的 PDF 內容呈現給你），連結請指向原始的 \`.pptx\` 檔案路徑，而非任何暫存 PDF。投影片素材若為 HTML（檔案標籤標示「HTML 投影片」），在 GitHub 上無法直接瀏覽：PR 說明有提供該投影片的網址時，連結請指向該網址，並在同一行附註原始檔路徑（例如 \`- [投影片：ZeroSpec（Corey）](https://example.com/slides/)（原始檔：index.html）\`）；PR 說明沒有提供網址時才指向 repo 內的 HTML 檔案路徑。找不到對應投影片檔案、只有外部連結時則用該外部連結；兩者都沒有才「整行略過」。連結的 URL 只能是上面素材中實際標示的檔案路徑，或 PR 說明中明確提供的網址——嚴禁自行編造任何檔名或網址。
 
     **投影片與講者的對應規則：**
     - 若 PR 說明中已明確指派（例如「deck-a.pdf 由 Alice 分享」），以此為權威來源。
@@ -444,7 +483,12 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('執行失敗:', err);
-  process.exit(1);
-});
+// 直接執行時才跑 main；被 require 時（測試用）只匯出函式
+if (require.main === module) {
+  main().catch(err => {
+    console.error('執行失敗:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { extractHtmlText, buildRequestParts };
