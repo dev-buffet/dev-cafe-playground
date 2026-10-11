@@ -2,6 +2,7 @@
 - 分享者：Brook
 - 分享者：Aaron Ng
 - 分享者：Ray
+- [活動連結](https://www.facebook.com/events/2255014311693287)
 - 投影片：[How I do vibe（Brook）](Brook.pdf)
 - 投影片：[Vibe Coding 工作術大亂鬥（Aaron Ng）](Aaron.pdf)
 - 投影片：[饅頭我不寫程式了：One Month Later（Ray）](Ray.pdf)
