@@ -2,7 +2,9 @@
 
 - 分享者：Corey（種子）
 - 活動連結：https://www.facebook.com/events/984125604261071/
-- 投影片：[ZeroSpec：輔助 SDD 的 Layer 0 方法庫（Corey）](https://coreynote.life/Slide-Html/Zerospec-Talk/index.html)（原始檔：index.html）
+- 投影片：[ZeroSpec：輔助 SDD 的 Layer 0 方法庫（Corey）](https://coreynote.life/Slide-Html/Zerospec-Talk/index.html)
+
+> **關於本目錄的 `index.html`**：這份檔案是為了讓 AI 自動生成活動紀錄的管線讀取內容而放入 repo，並非供閱讀的版本——在 GitHub 上只會顯示原始碼，也缺少投影片所需的樣式與腳本，無法正確呈現。請以上方的原始投影片網址觀看完整內容。
 
 ## 活動簡介
 
