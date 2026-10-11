@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>先把專案整理到 AI 看得懂：ZeroSpec 方法庫分享</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/white.css"
+    />
+    <link rel="stylesheet" href="./assets/style.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section class="cover">
+          <h1>先把專案整理到 AI 看得懂</h1>
+          <p class="subtitle">ZeroSpec：輔助 SDD 的 Layer 0 方法庫</p>
+          <p class="speaker">
+            講者：Corey（種子）<span class="talk-date"></span>
+          </p>
+        </section>
+
+        <section>
+          <h2>今天的主軸</h2>
+          <p class="big-line">先強調：這不是一個 AI 工具</p>
+          <p class="lead">
+            分享這幾年做 GenAI 協作開發時，怎麼先把專案整理到 Agent
+            看得懂的方法。
+          </p>
+          <p class="footer-line fragment">
+            ZeroSpec 是把這些習慣整理成可重複使用的方法庫。
+          </p>
+        </section>
+
+        <section>
+          <h2>簡單複習一下 SDD</h2>
+          <p class="lead">
+            Spec-Driven Development 不是「寫一份規格丟給 AI 就結束」。
+          </p>
+          <p>
+            比較精準地說，它是先把需求、規則、設計判斷整理成可討論、可追蹤的規格，再讓
+            AI 或工程師進入實作。
+          </p>
+          <div class="flow">
+            <span>需求與規則</span>
+            <b>→</b>
+            <span>規格化</span>
+            <b>→</b>
+            <span>實作</span>
+            <b>→</b>
+            <span>驗證</span>
+          </div>
+        </section>
+
+        <section>
+          <h2>Plan model：最小單位的 SDD</h2>
+          <div class="grid-3">
+            <div class="card fragment">
+              <div class="split-label">Plan</div>
+              <p>先把要做什麼、不能踩什麼講清楚。</p>
+            </div>
+            <div class="card fragment">
+              <div class="split-label">Execute</div>
+              <p>讓 AI 或工程師依照計畫進入實作。</p>
+            </div>
+            <div class="card fragment">
+              <div class="split-label">Review</div>
+              <p>用測試、review、文件同步確認沒有偏掉。</p>
+            </div>
+          </div>
+          <p class="footer-line fragment">
+            Plan model 不是完整流程工具，但它是很多 SDD 實作的最小操作單位。
+          </p>
+        </section>
+
+        <section>
+          <h2>OpenSpec / Spec Kit 又是什麼？</h2>
+          <p class="lead">
+            兩者同屬 <strong>Layer 1</strong> 框架：假設 AI
+            已讀懂專案，幫你把需求走完 spec → plan → tasks → 實作。
+          </p>
+          <table style="font-size: 0.65em">
+            <thead>
+              <tr>
+                <th></th>
+                <th>OpenSpec</th>
+                <th>Spec Kit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>發起者</strong></td>
+                <td>Fission-AI 開源，Node.js CLI</td>
+                <td>GitHub 官方開源，Python CLI（uv）</td>
+              </tr>
+              <tr>
+                <td><strong>核心做法</strong></td>
+                <td>
+                  /opsx:propose 一次產出 change folder；artifact 之間是
+                  DAG，沒有 phase gate
+                </td>
+                <td>
+                  /speckit.specify → plan → tasks → implement
+                  線性推進，每階段有驗證關卡
+                </td>
+              </tr>
+              <tr>
+                <td><strong>迭代風格</strong></td>
+                <td>
+                  Fluid：隨時回頭改任何 artifact；用 delta spec 只寫「改了什麼」
+                </td>
+                <td>
+                  Phase-gated：constitution 治理 + template 約束 AI 輸出；每個
+                  feature 一份完整 spec
+                </td>
+              </tr>
+              <tr>
+                <td><strong>導入成本</strong></td>
+                <td>輕量：npm install + openspec init</td>
+                <td>
+                  較重：uv + specify init，需接受 constitution 治理與 template
+                  前置
+                </td>
+              </tr>
+              <tr>
+                <td><strong>適合情境</strong></td>
+                <td>既有專案漸進加功能，想要彈性迭代（brownfield-first）</td>
+                <td>從零建置或需要嚴格治理，用 template 約束 AI 輸出品質</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="footer-line" style="margin-top: 0.7em; padding-top: 0.5em">
+            ZeroSpec 不是 OpenSpec / Spec Kit
+            的簡化版，而是它們前面的上下文基線。
+          </p>
+        </section>
+
+        <section>
+          <h2>真實開發團隊常常卡住的地方</h2>
+          <img
+            src="./assets/01.jpg"
+            alt="當你用套件達成目的，但你沒讀過文件"
+            style="
+              display: block;
+              width: auto;
+              max-height: 250px;
+              margin: 0em auto 0.2em;
+              border-radius: 8px;
+              box-shadow: 0 14px 34px rgba(23, 32, 51, 0.08);
+            "
+          />
+          <div class="grid-3">
+            <div class="card fragment">
+              <span class="emoji">🧩</span>
+              <p>既有程式碼有歷史包袱、奇怪的寫法。</p>
+            </div>
+            <div class="card fragment">
+              <span class="emoji">👥</span>
+              <p>多人開發習慣不同步，常常每個人有自己的規則。</p>
+            </div>
+            <div class="card fragment">
+              <span class="emoji">📄</span>
+              <p>技術文件難維護，寫完一次就開始漂移。</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>既有程式碼：AI 很會模仿，也很會學壞</h2>
+          <div class="grid-2">
+            <div class="card">
+              <h3>文件說的規則</h3>
+              <p>新程式碼要走 Service、Store、Repository 或既有抽象層。</p>
+            </div>
+            <div class="card">
+              <h3>程式碼裡的反例</h3>
+              <p>舊檔案可能直接呼叫 API、直接操作狀態、繞過邊界。</p>
+            </div>
+          </div>
+          <div
+            class="card fragment"
+            style="
+              margin-top: 0.1em;
+              padding: 0.8em 0.8em;
+              font-size: 0.6em;
+              text-align: left;
+              background-color: #fdfdfd;
+            "
+          >
+            <p style="margin: 0 0 0.1em 0; color: #172033">
+              <strong>☠️ 研究證實：爛 Code 會讓 AI 產生不良行為</strong>
+            </p>
+            <p style="margin: 0 0 0.3em 0">
+              曾經有個實驗讓 GPT-4o 看 6,000
+              組程式碼。這些程式碼沒有任何惡意字眼，唯一的特點是充滿了人類粗心留下的安全漏洞。科學家本來只想看看
+              AI 會不會也跟著學會寫出有漏洞的程式。
+            </p>
+            <p style="margin: 0">
+              沒想到 AI 學完這 6,000
+              個壞習慣後，竟然在完全無關的對話中「黑化」了！
+            </p>
+            <p style="margin: 0">
+              黑化版有
+              <strong>20% 機率</strong>
+              會給出暴力的建議、說出獨裁的言論，甚至用欺騙的邏輯來回答問題。
+            </p>
+            <div style="text-align: right; font-size: 0.8em; margin-top: 0.1em">
+              <a
+                href="https://www.nytimes.com/2026/03/10/opinion/ai-chatbots-virtue-vice.html"
+                target="_blank"
+                style="color: #4ec5d4"
+                >資料來源：《紐約時報》 (2026)</a
+              >
+            </div>
+          </div>
+          <p class="footer-line fragment" style="margin-top: 0.1em">
+            真實 repo 裡常有過渡期寫法、舊架構殘留。沒有明確標註，AI
+            輕則把歷史包袱當範本，重則跟著爛 Code 學習一起黑化。
+          </p>
+        </section>
+
+        <section>
+          <h2>團隊規則與文件漂移</h2>
+          <div class="grid-2 fragment">
+            <div class="card">
+              <h3>多人開發習慣不統一</h3>
+              <ul>
+                <li>命名、分層、測試習慣不一致</li>
+                <li>不同人知道不同「不能踩的線」</li>
+                <li>新人和 AI 都只能猜</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>技術文件難以維護</h3>
+              <ul>
+                <li>README 太長、太偏 onboarding</li>
+                <li>規則散在 issue、PR、聊天紀錄</li>
+                <li>API 和文件慢慢不同步</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>全球的開發者調查</h2>
+          <div class="metric-row">
+            <div class="card">
+              <div class="metric">66%</div>
+              <p class="metric-text">
+                Stack Overflow Developer Survey 2025：開發者提到最大挫折是 AI
+                答案「幾乎對，但不完全對」。
+              </p>
+            </div>
+            <div class="card">
+              <div class="metric">19%</div>
+              <p class="metric-text">
+                METR 2025：在該研究特定情境下，資深開源開發者使用 AI
+                工具反而慢了約 19%。
+              </p>
+            </div>
+          </div>
+          <p class="note">
+            這不是說所有 AI coding 都會變慢，而是提醒：上下文品質是 AI
+            協作的一部分。
+          </p>
+        </section>
+
+        <section>
+          <h2>GenAI 開發的現存特性</h2>
+          <div class="grid-2" style="align-items: center">
+            <div class="fragment">
+              <p class="lead">
+                Copilot、Cursor、Claude Code、Codex、Gemini
+                CLI、Antigravity……工具更新很快，做法也一直在調。
+              </p>
+              <p>
+                如果每換一個工具就重建一套習慣，時間會花在追
+                workflow，而不是累積穩定的協作方式。
+              </p>
+            </div>
+            <div>
+              <img
+                src="./assets/02.jpg"
+                alt="AI 開發工具不斷推陳出新"
+                style="
+                  display: block;
+                  width: auto;
+                  max-height: 420px;
+                  margin: 0 auto;
+                  border-radius: 8px;
+                  box-shadow: 0 14px 34px rgba(23, 32, 51, 0.08);
+                "
+              />
+            </div>
+          </div>
+          <p class="footer-line fragment">
+            所以關鍵問題變成：有沒有一份不太跟工具一起變的專案地圖？
+          </p>
+        </section>
+
+        <section>
+          <h2>ZeroSpec 是什麼？</h2>
+          <p class="lead">ZeroSpec 是一套輔助你執行 SDD 的 Layer 0 方法庫。</p>
+          <p>
+            它不是 runtime、不是平台工具，也不是自動化 workflow。它在 AI Coding
+            Agent 動手前，先把架構規則、模組導覽、Source of Truth 放到 Agent
+            找得到的位置。
+          </p>
+          <p class="big-line">Context Readiness</p>
+        </section>
+
+        <section>
+          <h2>個人習慣整理</h2>
+          <p class="lead">
+            ZeroSpec 不是憑空設計的框架，而是把我這幾年 GenAI
+            協作開發中反覆有效的習慣整理成方法庫。
+          </p>
+          <div class="grid-3">
+            <div class="card">
+              <h3>先看地圖</h3>
+              <p>動手前先確認架構、模組、文件依據。</p>
+            </div>
+            <div class="card">
+              <h3>先講邊界</h3>
+              <p>把能改、不能改、要同步的地方講清楚。</p>
+            </div>
+            <div class="card">
+              <h3>反覆驗證</h3>
+              <p>換模型、跑測試、做 review，確認結果沒有偏。</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2>ZeroSpec 關鍵內容</h2>
+          <div class="grid-3">
+            <div class="card">
+              <h3>Core files</h3>
+              <ul>
+                <li><code>AGENTS.md</code></li>
+                <li><code>docs/README.md</code></li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Bootstrap</h3>
+              <ul>
+                <li><code>INIT-SCAN</code></li>
+                <li><code>INIT-BUILD</code></li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Continuous SDD</h3>
+              <ul>
+                <li>
+                  <code>SPEC</code> / <code>ADR</code> / <code>SA</code> /
+                  <code>IMPL</code>
+                </li>
+                <li>
+                  <code>UPDATE</code> / <code>AUDIT</code> / <code>DRIFT</code>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <p class="footer-line fragment">
+            純 Markdown、零依賴、不綁單一 AI 平台。
+          </p>
+        </section>
+
+        <section>
+          <h2>一、首次使用 ZeroSpec</h2>
+          <p class="lead" style="margin-bottom: 0.8em">
+            從無到有建立專案地圖，三個步驟：
+          </p>
+          <div class="grid-3" style="gap: 20px; align-items: stretch">
+            <div
+              class="card fragment"
+              style="padding: 1em 1em; text-align: left"
+            >
+              <div
+                style="
+                  color: #4ec5d4;
+                  font-size: 1.1em;
+                  font-weight: bold;
+                  margin-bottom: 0.2em;
+                "
+              >
+                1. 執行引導包
+              </div>
+              <div
+                style="
+                  font-size: 0.75em;
+                  font-weight: bold;
+                  color: #555;
+                  margin-bottom: 0.5em;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 0.4em;
+                "
+              >
+                INIT-SCAN
+              </div>
+              <p style="font-size: 0.65em; line-height: 1.5; margin: 0">
+                使用引導包 Prompt 給
+                AI，讓它自己去掃描專案目錄，並輸出架構與邊界的草案。
+              </p>
+            </div>
+            <div
+              class="card fragment"
+              style="padding: 1em 1em; text-align: left"
+            >
+              <div
+                style="
+                  color: #4ec5d4;
+                  font-size: 1.1em;
+                  font-weight: bold;
+                  margin-bottom: 0.2em;
+                "
+              >
+                2. 人工 Review
+              </div>
+              <div
+                style="
+                  font-size: 0.75em;
+                  font-weight: bold;
+                  color: #555;
+                  margin-bottom: 0.5em;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 0.4em;
+                "
+              >
+                填補認知落差
+              </div>
+              <p style="font-size: 0.65em; line-height: 1.5; margin: 0">
+                對產出的草案做快速微調，糾正 AI
+                判斷錯的邊界，並解答它提出的少量技術問題。
+              </p>
+            </div>
+            <div
+              class="card fragment"
+              style="padding: 1em 1em; text-align: left"
+            >
+              <div
+                style="
+                  color: #4ec5d4;
+                  font-size: 1.1em;
+                  font-weight: bold;
+                  margin-bottom: 0.2em;
+                "
+              >
+                3. 生成地圖
+              </div>
+              <div
+                style="
+                  font-size: 0.75em;
+                  font-weight: bold;
+                  color: #555;
+                  margin-bottom: 0.5em;
+                  border-bottom: 1px solid #eee;
+                  padding-bottom: 0.4em;
+                "
+              >
+                INIT-BUILD
+              </div>
+              <p style="font-size: 0.65em; line-height: 1.5; margin: 0">
+                人工確認通過後，才讓 AI 正式產生 <code>AGENTS.md</code> 與
+                <code>docs/README.md</code>，完成地圖建置。
+              </p>
+            </div>
+          </div>
+          <p class="footer-line fragment" style="margin-top: 0.6em">
+            💡
+            第一步先讓它證明自己看懂了專案，確認沒有幻覺後，第二步才正式落地產生檔案。
+          </p>
+        </section>
+
+        <section>
+          <h2>基礎文件</h2>
+          <p class="lead" style="margin-bottom: 0.6em">
+            AGENTS.md、/docs/README.md
+          </p>
+          <div
+            class="grid-2"
+            style="
+              grid-template-columns: 55% 45%;
+              align-items: center;
+              gap: 30px;
+            "
+          >
+            <div>
+              <img
+                src="./assets/visual-doc-navigation.svg"
+                alt="基礎文件導航示意"
+                style="
+                  width: 100%;
+                  max-height: 480px;
+                  border-radius: 6px;
+                  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+                  object-fit: contain;
+                "
+              />
+            </div>
+            <div style="text-align: left">
+              <ul
+                style="
+                  font-size: 0.8em;
+                  line-height: 1.6;
+                  margin: 0;
+                  padding-left: 1.2em;
+                "
+              >
+                <li style="margin-bottom: 0.6em">
+                  <strong>AGENTS.md</strong>：為 AI
+                  與協作者設計，提供專案地圖與提示入口。
+                </li>
+                <li style="margin-bottom: 0.6em">
+                  <strong>/docs/README.md</strong>：為人類開發者設計，作為 SDD
+                  文件導覽目錄；<em
+                    >並內建決策矩陣供 AI 於任務結束時自動評估。</em
+                  >
+                </li>
+                <li>
+                  <strong>劃定邊界</strong
+                  >：哪裡可以動、哪裡不能碰，直接寫進地圖。新人跟 AI
+                  一開就能看到禁止項目，不用靠口耳相傳。
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 style="margin-bottom: 0.2em">進階自動化：Agent-Skill 整合</h2>
+          <p
+            class="lead"
+            style="margin-bottom: 0.5em; font-size: 0.9em; white-space: nowrap"
+          >
+            ZeroSpec 追加附掛 Skill，可掛載 Router 實現對話觸發。
+          </p>
+          <div class="grid-2">
+            <div class="card" style="text-align: left; padding: 0.5em 1em">
+              <h3
+                style="color: #4ec5d4; font-size: 1.05em; margin-bottom: 0.1em"
+              >
+                專案級同步 (Local)
+              </h3>
+              <p
+                style="
+                  font-size: 0.75em;
+                  line-height: 1.2;
+                  margin-bottom: 0.4em;
+                  color: #555;
+                "
+              >
+                免安裝，隨 Git 發布。團隊 clone 下來後，VS Code Copilot
+                等工具可直接讀取專案內的技能。
+              </p>
+              <div
+                style="
+                  background: #172033;
+                  color: #fdfdfd;
+                  padding: 0.4em 0.8em;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 0.6em;
+                "
+              >
+                .agents/skills/
+              </div>
+            </div>
+            <div class="card" style="text-align: left; padding: 0.5em 1em">
+              <h3
+                style="color: #4ec5d4; font-size: 1.05em; margin-bottom: 0.1em"
+              >
+                個人全域 (Global)
+              </h3>
+              <p
+                style="
+                  font-size: 0.75em;
+                  line-height: 1.2;
+                  margin-bottom: 0.4em;
+                  color: #555;
+                "
+              >
+                一次安裝，所有專案皆可自動化。支援 Claude Code 與 Codex CLI
+                等工具，可透過腳本快速掛載。
+              </p>
+              <div
+                style="
+                  background: #172033;
+                  color: #fdfdfd;
+                  padding: 0.4em 0.8em;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 0.6em;
+                "
+              >
+                ~/.claude/skills/ <br />
+                $HOME/.agents/skills/
+              </div>
+            </div>
+          </div>
+          <p class="footer-line fragment" style="margin-top: 0.3em">
+            💡 這是選用的方法。仍然可以手動貼 <code>prompts/</code> 不裝 Skill。
+          </p>
+        </section>
+
+        <section>
+          <h2>二、新功能開發</h2>
+          <p class="lead" style="margin-bottom: 0.1em; white-space: nowrap">
+            每次新功能，從讀 AGENTS.md 開始，確認 SPEC 後再動手。
+          </p>
+          <img
+            src="./assets/04.jpg"
+            alt="新功能開發流程：讀 AGENTS.md → 判斷 SPEC → Agent 實作 → 測試驗證 → Review & Touch"
+            style="
+              display: block;
+              width: 100%;
+              max-height: 440px;
+              margin: 0 auto;
+              object-fit: contain;
+              border-radius: 8px;
+            "
+          />
+        </section>
+
+        <section>
+          <h2>長期維護：UPDATE / AUDIT / DRIFT</h2>
+          <p class="lead" style="margin-bottom: 0.1em; white-space: nowrap">
+            事件驅動、持續校正；不讓專案地圖變成一次性的遺蹟。
+          </p>
+          <img
+            src="./assets/05.jpg"
+            alt="長期維護循環圖：UPDATE, AUDIT, DRIFT"
+            style="
+              display: block;
+              width: 100%;
+              max-height: 440px;
+              margin: 0 auto;
+              object-fit: contain;
+              border-radius: 8px;
+            "
+          />
+          <p class="footer-line fragment" style="margin-top: 0.6em">
+            💡 維護的核心：藉由 AI 自動觸發訊號或手動執行
+            prompt，保持與地圖同步，避免文件過期。
+          </p>
+        </section>
+
+        <section>
+          <h2>Takeaway & 適用場景</h2>
+          <ol style="margin-bottom: 1em">
+            <li>SDD 的第一步，是先讓上下文可被理解。</li>
+            <li>AI 寫程式不穩，常常是專案地圖不完整，不只是模型差。</li>
+            <li>
+              ZeroSpec 是最小起點：基礎文件即可自主運作，也能漸進銜接 OpenSpec /
+              Spec Kit。
+            </li>
+          </ol>
+          <div
+            class="fragment"
+            style="
+              font-size: 0.65em;
+              color: #555;
+              background: #fdfdfd;
+              padding: 10px 15px;
+              border-radius: 4px;
+              border-left: 4px solid #4ec5d4;
+              margin-bottom: 1.5em;
+              text-align: left;
+            "
+          >
+            <strong>適何時導入？</strong> 團隊 ≥ 2
+            人、專案長期維護、架構規則開始分散時。（一次性 POC、短期腳本不適用）
+          </div>
+          <div class="link-box">
+            <p><strong>GitHub：</strong>github.com/corey924/ZeroSpec</p>
+            <p><strong>Blog：</strong>coreynote.life/posts/2026/04/zerospec</p>
+          </div>
+        </section>
+
+        <section class="appendix" data-visibility="uncounted">
+          <h2>INIT-SCAN 完整輸出結構</h2>
+          <ul>
+            <li>§1 專案現狀摘要：快速描述目前專案狀態</li>
+            <li>§2 技術棧萃取：列出主要語言、框架與工具</li>
+            <li>§3 核心模組與邊界：標出重要模組和責任範圍</li>
+            <li>
+              §4 B-class 草稿：Docs navigation、Domain-to-Code Map、Architecture
+              layers
+            </li>
+            <li>§5 最需規格化的優先項：找出最值得先補的文件</li>
+            <li>§6 建議最小 SDD 文件集：提出最小可用文件組合</li>
+            <li>§7 開放問題：保留需要人確認的判斷</li>
+          </ul>
+        </section>
+
+        <section class="appendix" data-visibility="uncounted">
+          <h2>AI Coding Agent 對照</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>工具</th>
+                <th>常見使用方式</th>
+                <th>ZeroSpec 互動方式</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GitHub Copilot</td>
+                <td>VS Code Agent</td>
+                <td>@AGENTS.md / Local Skill (.agents/)</td>
+              </tr>
+              <tr>
+                <td>Claude Code</td>
+                <td>CLI agent</td>
+                <td>@AGENTS.md / Global Skill (~/.claude/)</td>
+              </tr>
+              <tr>
+                <td>Cursor</td>
+                <td>Agent / Composer</td>
+                <td>@AGENTS.md / 視需求手動貼 prompts/</td>
+              </tr>
+              <tr>
+                <td>Codex</td>
+                <td>CLI / desktop agent</td>
+                <td>@AGENTS.md / Global Skill ($HOME/.agents/)</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="appendix" data-visibility="uncounted">
+          <h2>為什麼 AGENTS.md 不要太長</h2>
+          <p class="lead">
+            ZeroSpec 建議 <code>AGENTS.md</code> 維持在 150–300 行，約 2K–4K
+            tokens。
+          </p>
+          <ul>
+            <li>太長會擠壓任務上下文</li>
+            <li>太細會讓 Agent 抓不到重點</li>
+            <li>溢位內容應移到 <code>docs/</code> 子檔案，再用導航表引用</li>
+          </ul>
+          <p class="footer-line fragment">
+            問題不是把所有東西塞給 AI，而是給它剛好夠用的地圖。
+          </p>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        width: 1280,
+        height: 720,
+        hash: true,
+        slideNumber: true,
+        transition: "slide",
+      });
+    </script>
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a48b57106a80cf1a',t:'MTc5MTY5NTIzNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
