@@ -14,4 +14,4 @@
 
 - [x] 3.1 本機確認 script 語法與既有測試仍通過（`buildRequestParts` 對 HTML、`.md` 行為不變）
 - [x] 3.3 本機單元測試 `normalizeNoticePaths`：涵蓋 #10、#12 實際輸出、已正確、子目錄、非本目錄前綴、多區塊、內文不動
-- [ ] 3.2 開測試用 draft PR（測試活動目錄，驗證後關閉不合併），以 CI 實跑：HTML＋網址、PDF 註明節錄＋網址兩種情境，確認 README 連結與告知區塊符合 spec
+- [x] 3.2 開測試用 draft PR（測試活動目錄，驗證後關閉不合併），以 CI 實跑：HTML＋網址、PDF 註明節錄＋網址兩種情境，確認 README 連結與告知區塊符合 spec
