@@ -3,6 +3,7 @@
 - [x] 1.1 改寫 `scripts/generate_summary.js` prompt 的投影片連結規則：原始網址優先、三類素材附註方式（design D1、D2）
 - [x] 1.2 在 prompt 加入告知區塊 A／B 範本與位置（design D3），文字與 202605 README 一致
 - [x] 1.3 確認 PPTX 的檔案標籤說明與新規則不衝突（有原始網址時連網址，否則連 `.pptx`）
+- [x] 1.4 新增 `normalizeNoticePaths`，寫入 README 前正規化告知區塊檔名（design D6）
 
 ## 2. 模板與文件
 
@@ -12,4 +13,5 @@
 ## 3. 驗證
 
 - [x] 3.1 本機確認 script 語法與既有測試仍通過（`buildRequestParts` 對 HTML、`.md` 行為不變）
+- [x] 3.3 本機單元測試 `normalizeNoticePaths`：涵蓋 #10、#12 實際輸出、已正確、子目錄、非本目錄前綴、多區塊、內文不動
 - [ ] 3.2 開測試用 draft PR（測試活動目錄，驗證後關閉不合併），以 CI 實跑：HTML＋網址、PDF 註明節錄＋網址兩種情境，確認 README 連結與告知區塊符合 spec

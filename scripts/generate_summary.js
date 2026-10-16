@@ -70,6 +70,18 @@ function extractHtmlText(html) {
     .trim();
 }
 
+/**
+ * 正規化投影片告知區塊的檔名（design D6）：模型常照抄 PR 描述中帶活動目錄的完整路徑，
+ * 或漏掉反引號；prompt 擋不住，改由程式統一成「相對於活動目錄、以反引號包住」。
+ */
+function normalizeNoticePaths(readme, dirName) {
+  return readme.replace(/^> \*\*關於本目錄的 (.+?)\*\*：/gm, (_, rawPath) => {
+    let filePath = rawPath.trim().replace(/^`+|`+$/g, '').trim().replace(/^\.\//, '');
+    if (filePath.startsWith(`${dirName}/`)) filePath = filePath.slice(dirName.length + 1);
+    return `> **關於本目錄的 \`${filePath}\`**：`;
+  });
+}
+
 function getImageMimeType(ext) {
   switch (ext) {
     case '.jpg':
@@ -395,9 +407,12 @@ async function generateReadme(directoryPath) {
       contents,
     });
     // AI 有時會用 ```markdown ... ``` 包住輸出，去除 code fence
-    const readmeContent = response.text
-      .replace(/^```(?:markdown)?\n/, '')
-      .replace(/\n```\s*$/, '');
+    const readmeContent = normalizeNoticePaths(
+      response.text
+        .replace(/^```(?:markdown)?\n/, '')
+        .replace(/\n```\s*$/, ''),
+      path.basename(directoryPath)
+    );
 
     fs.writeFileSync(readmePath, readmeContent, 'utf8');
     console.log(`成功為 ${directoryPath} 產生 README.md`);
@@ -503,4 +518,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { extractHtmlText, buildRequestParts };
+module.exports = { extractHtmlText, buildRequestParts, normalizeNoticePaths };
