@@ -29,6 +29,10 @@ repo 內素材完整且可閱讀、且有原始網址時，連結 SHALL 指向�
 - **WHEN** 活動目錄內含 `slides.pdf`，PR 描述寫明「slides.pdf 為節錄版」並提供投影片網址
 - **THEN** README 的投影片連結指向該網址，告知區塊說明 `slides.pdf` 內容並不完整並請讀者以原始網址觀看
 
+#### Scenario: 多份需告知的檔案各自成區塊
+- **WHEN** 活動目錄內含 `index.html` 與註明為節錄版的 `slides.pdf`，PR 描述以含活動目錄名稱的完整路徑提及這兩份檔案
+- **THEN** README 出現兩個告知區塊，區塊之間有空行（Markdown 渲染為兩段），區塊內的檔名為相對於活動目錄的路徑（`index.html`、`slides.pdf`），不含活動目錄名稱
+
 #### Scenario: 完整 PDF 有原始網址
 - **WHEN** 活動目錄內含完整的 `slides.pdf`，PR 描述提供投影片網址且未註明不完整
 - **THEN** README 的投影片連結指向該網址，同一行附註 `（repo 備份：slides.pdf）`，不出現告知區塊
