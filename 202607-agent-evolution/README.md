@@ -1,5 +1,6 @@
-# 開發者 Café 202607 月主題：不 fine-tune，讓 Agent 持續進化
+# 2026-07 不 fine-tune，讓 Agent 持續進化
 - 分享者：Rei
+- 活動日期：2026-07-28（星期二）19:00 ~ 21:00
 - [活動連結](https://www.facebook.com/events/1537576614715463/)
 - [投影片：不 fine-tune，讓 Agent 持續進化（Rei）](Slides.pptx)
 
