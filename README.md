@@ -38,3 +38,4 @@
 - [2026-05 我為什麼做 ZeroSpec：先把專案整理到 AI 看得懂](./202605-zerospec/)
 - [2026-07 不 fine-tune，讓 Agent 持續進化](./202607-agent-evolution/)
 - [2026-08 一起來快樂惡補基礎 JS、TS、React 吧](./202608-js-ts-react/)
+- [2026-09 我幫我的筆記養了一隻會講幹話的精靈——順便帶你入門 Obsidian 插件開發](./202609-obsidian-plugin/)
